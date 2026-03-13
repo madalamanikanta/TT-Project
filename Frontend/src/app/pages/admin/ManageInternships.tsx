@@ -6,7 +6,7 @@ import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Edit, Trash2, Plus, Search } from 'lucide-react';
 import { Internship } from '../../types';
-import { fetchAllInternships } from '../../../services/internship';
+import { fetchAdminInternships } from '../../../services/admin';
 
 export default function ManageInternships() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,7 +32,7 @@ export default function ManageInternships() {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await fetchAllInternships();
+        const data = await fetchAdminInternships();
         setInternships(data);
       } catch (err: any) {
         console.error(err);

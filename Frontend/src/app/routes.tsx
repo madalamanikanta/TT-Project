@@ -9,8 +9,10 @@ import SavedInternships from './pages/student/SavedInternships';
 import InternshipListing from './pages/InternshipListing';
 import InternshipDetail from './pages/InternshipDetail';
 import AdminDashboard from './pages/admin/Dashboard';
+import AdminLogin from './pages/admin/Login';
 import ManageInternships from './pages/admin/ManageInternships';
 import ManageUsers from './pages/admin/ManageUsers';
+import Settings from './pages/admin/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -67,9 +69,13 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/admin/login',
+    Component: AdminLogin,
+  },
+  {
     path: '/admin/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requiredRole="admin">
         <AdminDashboard />
       </ProtectedRoute>
     ),
@@ -77,7 +83,7 @@ export const router = createBrowserRouter([
   {
     path: '/admin/internships',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requiredRole="admin">
         <ManageInternships />
       </ProtectedRoute>
     ),
@@ -85,8 +91,16 @@ export const router = createBrowserRouter([
   {
     path: '/admin/users',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute requiredRole="admin">
         <ManageUsers />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/settings',
+    element: (
+      <ProtectedRoute requiredRole="admin">
+        <Settings />
       </ProtectedRoute>
     ),
   },

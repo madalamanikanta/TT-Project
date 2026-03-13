@@ -1,24 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Edit, Trash2, Search } from 'lucide-react';
-import { mockUsers, User } from '../../data/mockData';
+import { fetchAdminUsers } from '../../../services/admin';
+import { User } from '../../types';
 
 export default function ManageUsers() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    fetchAdminUsers().then(data => {
+      setUsers(data);
+    }).catch(err => {
+      console.error('Failed to load users:', err);
+    }).finally(() => setLoading(false));
+  }, []);
 
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string | number) => {
     if (confirm('Are you sure you want to delete this user?')) {
       setUsers(users.filter(u => u.id !== id));
+      // TODO: Call backend delete API here when implemented
     }
   };
 
@@ -60,13 +71,13 @@ export default function ManageUsers() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <p className="text-gray-600 mb-2">Students</p>
               <p className="text-3xl font-semibold text-gray-900">
-                {users.filter(u => u.role === 'student').length}
+                {users.filter(u => u.role === 'STUDENT' || u.role === 'student').length}
               </p>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <p className="text-gray-600 mb-2">Admins</p>
               <p className="text-3xl font-semibold text-gray-900">
-                {users.filter(u => u.role === 'admin').length}
+                {users.filter(u => u.role === 'ADMIN' || u.role === 'admin').length}
               </p>
             </div>
           </div>
@@ -89,27 +100,12 @@ export default function ManageUsers() {
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                      <Badge variant={user.role === 'ADMIN' || user.role === 'admin' ? 'default' : 'secondary'}>
                         {user.role}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {user.skills ? (
-                        <div className="flex flex-wrap gap-1">
-                          {user.skills.slice(0, 2).map((skill, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                          {user.skills.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{user.skills.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                      <span className="text-gray-400">View Details</span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

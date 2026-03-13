@@ -42,9 +42,14 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(response.data.user));
 
         // navigate to appropriate dashboard based on role
-        const role = response.data.user?.role || 'student';
+        const roleStr = response.data.user?.role;
+        const rolesArr = response.data.user?.roles;
+        const role = rolesArr?.[0] || roleStr || 'student';
+        
+        localStorage.setItem('role', role);
+        
         console.log('Logged in user role:', role);
-        if (role === 'admin') {
+        if (role === 'ADMIN' || role === 'ROLE_ADMIN' || role === 'admin') {
           navigate('/admin/dashboard');
         } else {
           navigate('/student/dashboard');

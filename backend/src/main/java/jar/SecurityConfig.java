@@ -20,16 +20,13 @@ import java.util.Arrays;
 /**
  * Security configuration with JWT authentication and CORS support.
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final AdminOriginFilter adminOriginFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          AdminOriginFilter adminOriginFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.adminOriginFilter = adminOriginFilter;
     }
 
     @Bean
@@ -39,26 +36,20 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Public auth API (login/register, etc.)
+                        // Public root + UI routes
+                        .requestMatchers("/", "/login", "/register").permitAll()
+                        // Student portal routes
+                        .requestMatchers("/student/**").permitAll()
+                        // Public auth API
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Admin UI entry point and login page (served by backend)
-                        .requestMatchers(
-                                "/admin",
-                                "/admin/login",
-                                "/admin/login.html",
-                                "/admin/dashboard.html",
-                                "/admin/logout"
-                        ).permitAll()
-                        // Admin API and pages require ADMIN role
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        // Everything else requires authentication (e.g. student APIs)
-                        .anyRequest().authenticated()
+                        // Admin API requires ADMIN role
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Allow everything else by default
+                        .anyRequest().permitAll()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // Apply origin check before JWT token parsing (blocks requests from disallowed origins)
-        http.addFilterBefore(adminOriginFilter, JwtAuthenticationFilter.class);
-        // Then apply JWT authentication for all protected endpoints
+        // Apply JWT authentication for all protected endpoints
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -68,16 +59,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        // Admin routes must only be accessed from backend origin (localhost:8080)
-        // This prevents the frontend dev server (localhost:5173) from making CORS/XHR requests to /admin.
-        CorsConfiguration adminCors = new CorsConfiguration();
-        adminCors.setAllowedOrigins(Arrays.asList("http://localhost:8080"));
-        adminCors.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        adminCors.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        adminCors.setAllowCredentials(true);
-        source.registerCorsConfiguration("/admin/**", adminCors);
-
-        // Public APIs (used by student frontend) can be called from dev frontend a few common ports.
+        // Public APIs (used by frontend) can be called from dev frontend ports.
         CorsConfiguration apiCors = new CorsConfiguration();
         apiCors.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",

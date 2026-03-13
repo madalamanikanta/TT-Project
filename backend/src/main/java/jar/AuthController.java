@@ -1,5 +1,7 @@
 package jar;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jar.dto.UserDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,31 +72,41 @@ public class AuthController {
      * Body: { "email": "john@example.com", "password": "password123" }
      */
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request,
+                                                     HttpServletResponse response) {
         try {
             logger.info("Login attempt for email: {}", request.getEmail());
             User user = userService.loginUser(request.getEmail(), request.getPassword());
             UserDTO userDTO = userService.convertToDTO(user);
             String token = jwtUtil.generateToken(user.getEmail(), user.getId());
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Login successful");
-            response.put("user", userDTO);
-            response.put("token", token);
-            return ResponseEntity.ok(response);
+            // Set JWT as HttpOnly cookie so that browser navigation to /admin can use it
+            Cookie cookie = new Cookie("JWT", token);
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            cookie.setMaxAge(24 * 60 * 60); // 1 day
+            // In production set to true when using HTTPS
+            cookie.setSecure(false);
+            response.addCookie(cookie);
+
+            Map<String, Object> responseBody = new HashMap<>();
+            responseBody.put("success", true);
+            responseBody.put("message", "Login successful");
+            responseBody.put("user", userDTO);
+            responseBody.put("token", token);
+            return ResponseEntity.ok(responseBody);
         } catch (RuntimeException e) {
             logger.warn("Login failed: {}", e.getMessage());
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            Map<String, Object> responseBody = new HashMap<>();
+            responseBody.put("success", false);
+            responseBody.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(responseBody);
         } catch (Exception e) {
             logger.error("Unexpected error during login", e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", "Login failed: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            Map<String, Object> responseBody = new HashMap<>();
+            responseBody.put("success", false);
+            responseBody.put("error", "Login failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
         }
     }
 
