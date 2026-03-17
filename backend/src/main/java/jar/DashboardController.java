@@ -41,32 +41,72 @@ public class DashboardController {
     @GetMapping("/dashboard")
     public ResponseEntity<?> getDashboard(HttpServletRequest request) {
         try {
-            Long userId = extractUserId(request);
-            logger.info("Dashboard requested for user {}", userId);
+            Long userId = null;
+            try {
+                userId = extractUserId(request);
+            } catch (RuntimeException e) {
+                logger.warn("Missing or invalid auth token for dashboard request: {}", e.getMessage());
+            }
+            logger.info("Dashboard requested for user {}", userId == null ? "unknown" : userId);
 
-            // fetch skills
+            if (userId == null) {
+                Map<String, Object> safeResponse = new HashMap<>();
+                safeResponse.put("success", false);
+                safeResponse.put("skillCount", 0);
+                safeResponse.put("skills", List.of());
+                safeResponse.put("matches", List.of());
+                safeResponse.put("matchCount", 0);
+                safeResponse.put("message", "User not authenticated");
+                return ResponseEntity.ok(safeResponse);
+            }
+
             Set<Skill> skillSet = userService.getUserSkills(userId);
+            if (skillSet == null) {
+                skillSet = java.util.Collections.emptySet();
+            }
 
-            // fetch match results and convert to DTOs
+            List<jar.dto.SkillDTO> skillDTOs = skillSet.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(skill -> jar.dto.SkillDTO.builder()
+                            .id(skill.getId())
+                            .name(skill.getName())
+                            .build())
+                    .collect(Collectors.toList());
+
             List<InternshipMatchResult> matchResults = internshipService.matchInternshipsForUser(userId);
+            if (matchResults == null) {
+                matchResults = List.of();
+            }
+
             List<jar.dto.InternshipDTO> internships = matchResults.stream()
-                    .map(r -> internshipService.convertToDTO(r.getInternship(), r.getScore()))
+                    .filter(java.util.Objects::nonNull)
+                    .map(r -> {
+                        if (r == null || r.getInternship() == null) {
+                            return null;
+                        }
+                        return internshipService.convertToDTO(r.getInternship(), r.getScore());
+                    })
+                    .filter(java.util.Objects::nonNull)
                     .collect(Collectors.toList());
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("skillCount", skillSet.size());
-            response.put("skills", skillSet);
+            response.put("skillCount", skillDTOs.size());
+            response.put("skills", skillDTOs);
             response.put("matches", internships);
             response.put("matchCount", internships.size());
 
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            logger.warn("Dashboard error: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(errorMap(e.getMessage()));
         } catch (Exception e) {
             logger.error("Unexpected dashboard error", e);
-            return ResponseEntity.status(500).body(errorMap("Internal error: " + e.getMessage()));
+            Map<String, Object> safeResponse = new HashMap<>();
+            safeResponse.put("success", false);
+            safeResponse.put("skillCount", 0);
+            safeResponse.put("skills", List.of());
+            safeResponse.put("matches", List.of());
+            safeResponse.put("matchCount", 0);
+            safeResponse.put("error", "Internal error: " + e.getMessage());
+            return ResponseEntity.ok(safeResponse);
         }
     }
 

@@ -21,7 +21,8 @@ interface BackendInternship {
 function normalizeSkills(skills: string | string[] | undefined | null): string[] {
   if (!skills) return [];
   if (Array.isArray(skills)) return skills.map(s => String(s).trim()).filter(Boolean);
-  return String(skills).split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  const trimmed = String(skills).trim();
+  return trimmed ? [trimmed] : [];
 }
 
 interface InternshipListProps {

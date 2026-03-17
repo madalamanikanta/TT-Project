@@ -184,7 +184,14 @@ public class InternshipService {
                         newSkill.setName(trimmed);
                         return skillRepository.save(newSkill);
                     });
+                    if (skill.getInternships() == null) {
+                        skill.setInternships(new java.util.HashSet<>());
+                    }
+                    if (saved.getSkills() == null) {
+                        saved.setSkills(new java.util.HashSet<>());
+                    }
                     skill.getInternships().add(saved);
+                    saved.getSkills().add(skill);
                     skillRepository.save(skill);
                 }
             }
@@ -228,14 +235,27 @@ public class InternshipService {
      * Get all internships from database
      */
     public List<Internship> getAllInternships() {
-        return internshipRepository.findAll();
+        try {
+            List<Internship> result = internshipRepository.findAllWithSkills();
+            return result != null ? result : List.of();
+        } catch (Exception e) {
+            logger.error("Error fetching all internships", e);
+            return List.of();
+        }
     }
 
     /**
      * Get internships by company
      */
     public List<Internship> getInternshipsByCompany(String company) {
-        return internshipRepository.findByCompany(company);
+        try {
+            return internshipRepository.findByCompany(company).stream()
+                    .peek(i -> i.getSkills().size())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error fetching internships by company", e);
+            return List.of();
+        }
     }
 
 
@@ -243,21 +263,35 @@ public class InternshipService {
      * Search internships by title
      */
     public List<Internship> searchInternships(String title) {
-        return internshipRepository.findByTitleContainingIgnoreCase(title);
+        try {
+            return internshipRepository.findByTitleContainingIgnoreCase(title).stream()
+                    .peek(i -> i.getSkills().size())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error searching internships", e);
+            return List.of();
+        }
     }
 
     /**
      * Get internships by source
      */
     public List<Internship> getInternshipsBySource(String source) {
-        return internshipRepository.findBySource(source);
+        try {
+            return internshipRepository.findBySource(source).stream()
+                    .peek(i -> i.getSkills().size())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error fetching internships by source", e);
+            return List.of();
+        }
     }
 
     /**
-     * Get internship by ID
+     * Get internship by ID (with skills loaded to avoid LazyInitializationException)
      */
     public Optional<Internship> getInternshipById(Long id) {
-        return internshipRepository.findById(id);
+        return internshipRepository.findByIdWithSkills(id);
     }
 
     /**
@@ -276,40 +310,48 @@ public class InternshipService {
      * If user has no skills, return all internships sorted by creation date.
      */
     public List<InternshipMatchResult> matchInternshipsForUser(Long userId) {
-        logger.info("Matching internships for user: {}", userId);
-        
-        // Fetch user by ID
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        // Get user's skills
-        Set<Skill> userSkills = user.getSkills();
-        logger.debug("User {} has {} skills", userId, userSkills.size());
-        
-        // Fetch all internships
-        List<Internship> allInternships = internshipRepository.findAll();
-        logger.debug("Total internships in database: {}", allInternships.size());
-        
-        // If user has no skills, return all internships sorted by creation date
-        if (userSkills.isEmpty()) {
-            logger.info("User has no skills, returning all internships sorted by date");
+        try {
+            logger.info("Matching internships for user: {}", userId);
+
+            // Fetch user by ID with skills to avoid lazy initialization issues
+            User user = userRepository.findByIdWithSkills(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Get user's skills (safe default to empty set)
+            Set<Skill> userSkills = user.getSkills() != null ? user.getSkills() : Set.of();
+            logger.debug("User {} has {} skills", userId, userSkills.size());
+
+            // Fetch all internships with skills
+            List<Internship> allInternships = internshipRepository.findAllWithSkills();
+            if (allInternships == null) {
+                allInternships = List.of();
+            }
+            logger.debug("Total internships in database: {}", allInternships.size());
+
+            // If user has no skills, return all internships sorted by creation date
+            if (userSkills.isEmpty()) {
+                logger.info("User has no skills, returning all internships sorted by date");
+                return allInternships.stream()
+                        .map(internship -> new InternshipMatchResult(internship, 0))
+                        .sorted(Comparator.comparing(InternshipMatchResult::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                        .collect(Collectors.toList());
+            }
+
+            // Match internships using weighted scoring
             return allInternships.stream()
-                    .map(internship -> new InternshipMatchResult(internship, 0))
-                    .sorted(Comparator.comparing(InternshipMatchResult::getCreatedAt).reversed())
+                    .map(internship -> {
+                        int score = calculateMatchScore(internship, userSkills);
+                        return new InternshipMatchResult(internship, score);
+                    })
+                    .filter(result -> result != null && result.getScore() > 0)
+                    .sorted(Comparator
+                            .comparingInt(InternshipMatchResult::getScore).reversed()
+                            .thenComparing(InternshipMatchResult::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                     .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error matching internships for user {}", userId, e);
+            return List.of();
         }
-        
-        // Match internships using weighted scoring
-        return allInternships.stream()
-                .map(internship -> {
-                    int score = calculateMatchScore(internship, userSkills);
-                    return new InternshipMatchResult(internship, score);
-                })
-                .filter(result -> result.getScore() > 0)  // Only include internships with at least some match
-                .sorted(Comparator
-                        .comparingInt(InternshipMatchResult::getScore).reversed()  // Sort by score (highest first)
-                        .thenComparing(result -> result.getCreatedAt()).reversed())  // Then by date (most recent first)
-                .collect(Collectors.toList());
     }
 
     /**
@@ -322,78 +364,105 @@ public class InternshipService {
      * - Title contains user skill (not already matched): +1
      */
     private int calculateMatchScore(Internship internship, Set<Skill> userSkills) {
-        int score = 0;
-        
-        // Prepare user skill names in lowercase for efficient matching
-        Set<String> userSkillNames = userSkills.stream()
-                .map(skill -> skill.getName().toLowerCase())
-                .collect(Collectors.toSet());
-        
-        String titleLower = internship.getTitle().toLowerCase();
-        
-        // Score for matching required skills
-        for (Skill requiredSkill : internship.getSkills()) {
-            String skillNameLower = requiredSkill.getName().toLowerCase();
-            
-            // Exact match: +2
-            if (userSkillNames.contains(skillNameLower)) {
-                score += 2;
-                logger.debug("Exact match: {} (+2)", skillNameLower);
-                
-                // Also bonus if title contains this skill
-                if (titleLower.contains(skillNameLower)) {
-                    score += 1;
-                    logger.debug("Title contains skill: {} (+1)", skillNameLower);
+        try {
+            int score = 0;
+
+            if (internship == null || userSkills == null || userSkills.isEmpty()) {
+                return 0;
+            }
+
+            Set<String> userSkillNames = userSkills.stream()
+                    .map(Skill::getName)
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
+
+            String titleLower = internship.getTitle() != null ? internship.getTitle().toLowerCase() : "";
+            Set<Skill> requiredSkills = internship.getSkills() != null ? internship.getSkills() : Set.of();
+
+            for (Skill requiredSkill : requiredSkills) {
+                if (requiredSkill == null || requiredSkill.getName() == null) {
+                    continue;
                 }
-            } else {
-                // Partial match: +1 (if required skill contains a user skill keyword)
-                for (String userSkill : userSkillNames) {
-                    if (skillNameLower.contains(userSkill)) {
+
+                String skillNameLower = requiredSkill.getName().toLowerCase();
+
+                if (userSkillNames.contains(skillNameLower)) {
+                    score += 2;
+                    if (!titleLower.isEmpty() && titleLower.contains(skillNameLower)) {
                         score += 1;
-                        logger.debug("Partial match: {} contains {} (+1)", skillNameLower, userSkill);
-                        break; // Count only once per required skill
+                    }
+                } else {
+                    for (String userSkill : userSkillNames) {
+                        if (skillNameLower.contains(userSkill)) {
+                            score += 1;
+                            break;
+                        }
+                    }
+                    if (!titleLower.isEmpty() && titleLower.contains(skillNameLower)) {
+                        score += 1;
                     }
                 }
-                
-                // Title bonus: +1 if title contains required skill
-                if (titleLower.contains(skillNameLower)) {
-                    score += 1;
-                    logger.debug("Title contains required skill: {} (+1)", skillNameLower);
+            }
+
+            for (String userSkill : userSkillNames) {
+                if (!userSkill.isEmpty() && titleLower.contains(userSkill)) {
+                    boolean isRequiredSkill = requiredSkills.stream()
+                            .filter(Objects::nonNull)
+                            .map(Skill::getName)
+                            .filter(Objects::nonNull)
+                            .map(String::toLowerCase)
+                            .anyMatch(userSkill::equals);
+                    if (!isRequiredSkill) {
+                        score += 1;
+                    }
                 }
             }
+
+            return score;
+        } catch (Exception e) {
+            logger.error("Error calculating match score for internship {}", internship != null ? internship.getId() : null, e);
+            return 0;
         }
-        
-        // Additional bonus: if title contains user's skills not already in required skills
-        for (String userSkill : userSkillNames) {
-            if (titleLower.contains(userSkill)) {
-                // Check if this skill is already in the required skills (to avoid double counting)
-                boolean isRequiredSkill = internship.getSkills().stream()
-                        .anyMatch(s -> s.getName().toLowerCase().equals(userSkill));
-                if (!isRequiredSkill) {
-                    score += 1;
-                    logger.debug("Title contains user skill: {} (+1)", userSkill);
-                }
-            }
-        }
-        
-        return score;
     }
 
     /**
      * Convert Internship to InternshipDTO with relevance score.
      */
     public jar.dto.InternshipDTO convertToDTO(Internship internship, int score) {
-        Set<jar.dto.SkillDTO> skillDTOs = internship.getSkills().stream()
-                .map(skill -> jar.dto.SkillDTO.builder()
-                        .id(skill.getId())
-                        .name(skill.getName())
-                        .build())
-                .collect(Collectors.toSet());
-        
+        if (internship == null) {
+            return jar.dto.InternshipDTO.builder()
+                    .id(null)
+                    .title("Unknown")
+                    .company("Unknown")
+                    .source("Unknown")
+                    .externalLink(null)
+                    .location(null)
+                    .description(null)
+                    .duration(null)
+                    .stipend(null)
+                    .deadline(null)
+                    .createdAt(null)
+                    .skills(List.of())
+                    .score(0)
+                    .build();
+        }
+
+        java.util.Set<Skill> effectiveSkills = internship.getSkills() != null ? internship.getSkills() : java.util.Set.of();
+        java.util.List<String> skillNames = effectiveSkills.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(Skill::getName)
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
         return jar.dto.InternshipDTO.builder()
                 .id(internship.getId())
-                .title(internship.getTitle())
-                .company(internship.getCompany())
+                .title(internship.getTitle() != null ? internship.getTitle() : "Unknown")
+                .company(internship.getCompany() != null ? internship.getCompany() : "Unknown")
                 .source(internship.getSource())
                 .externalLink(internship.getExternalLink())
                 .location(internship.getLocation())
@@ -402,7 +471,7 @@ public class InternshipService {
                 .stipend(internship.getStipend())
                 .deadline(internship.getDeadline())
                 .createdAt(internship.getCreatedAt())
-                .skills(skillDTOs)
+                .skills(skillNames)
                 .score(score)
                 .build();
     }
@@ -428,5 +497,28 @@ public class InternshipService {
         }
 
         logger.info("Deleted {} old internships", deletedCount);
+    }
+
+    @Autowired
+    private SavedInternshipRepository savedInternshipRepository;
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteInternship(Long id) {
+        Internship internship = internshipRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Internship not found with ID: " + id));
+
+        // 1. Remove associations with skills (Many-to-Many)
+        for (Skill skill : internship.getSkills()) {
+            skill.getInternships().remove(internship);
+            skillRepository.save(skill);
+        }
+        internship.getSkills().clear();
+
+        // 2. Delete dependent SavedInternship records
+        savedInternshipRepository.deleteByInternshipId(id);
+
+        // 3. Delete the actual internship
+        internshipRepository.delete(internship);
+        logger.info("Deleted internship with ID {}", id);
     }
 }

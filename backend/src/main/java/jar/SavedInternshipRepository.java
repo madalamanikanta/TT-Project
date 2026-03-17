@@ -8,4 +8,5 @@ public interface SavedInternshipRepository extends JpaRepository<SavedInternship
     List<SavedInternship> findByUserId(Long userId);
     Optional<SavedInternship> findByUserIdAndInternshipId(Long userId, Long internshipId);
     void deleteByUserIdAndInternshipId(Long userId, Long internshipId);
+    void deleteByInternshipId(Long internshipId);
 }

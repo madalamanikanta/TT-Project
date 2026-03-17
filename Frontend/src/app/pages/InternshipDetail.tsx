@@ -194,11 +194,11 @@ export default function InternshipDetail() {
 
           {/* Apply Button */}
           <div className="flex gap-4">
-            <Button size="lg" className="flex-1">
+            <Button size="lg" className="flex-1" onClick={() => window.open(internship.externalLink || '#', '_blank')}>
               Apply Now
             </Button>
-            <Button variant="outline" size="lg" className="flex-1">
-              Save for Later
+            <Button variant="outline" size="lg" className="flex-1" onClick={toggleSave}>
+              {saved ? 'Saved' : 'Save for Later'}
             </Button>
           </div>
         </div>

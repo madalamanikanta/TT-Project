@@ -50,14 +50,21 @@ export function InternshipCard({ internship, showMatchPercentage }: InternshipCa
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {internship.skills?.slice(0, 4).map((skill, index) => (
-          <Badge key={index} variant="secondary">
-            {skill}
-          </Badge>
-        ))}
-        {internship.skills && internship.skills.length > 4 && (
-          <Badge variant="secondary">+{internship.skills.length - 4} more</Badge>
-        )}
+        {(() => {
+          const skillsArr = Array.isArray(internship.skills) ? internship.skills : [];
+          return (
+            <>
+              {skillsArr.slice(0, 4).map((skill, index) => (
+                <Badge key={index} variant="secondary">
+                   {typeof skill === 'string' ? skill.trim() : (skill as any).name}
+                </Badge>
+              ))}
+              {skillsArr.length > 4 && (
+                <Badge variant="secondary">+{skillsArr.length - 4} more</Badge>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       <div className="flex gap-2">
@@ -66,7 +73,12 @@ export function InternshipCard({ internship, showMatchPercentage }: InternshipCa
             View Details
           </Button>
         </Link>
-        <Button className="flex-1">Apply Now</Button>
+        <Button
+          className="flex-1"
+          onClick={() => window.open(internship.externalLink || '#', '_blank')}
+        >
+          Apply Now
+        </Button>
       </div>
     </div>
   );

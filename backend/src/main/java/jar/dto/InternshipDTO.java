@@ -28,7 +28,7 @@ public class InternshipDTO {
     private String stipend;
     private String deadline;
     private LocalDateTime createdAt;
-    private Set<SkillDTO> skills;
+    private java.util.List<String> skills;
     
     /**
      * Weighted relevance score for this internship:

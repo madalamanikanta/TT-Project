@@ -12,6 +12,7 @@ export interface Internship {
   duration?: string;
   stipend?: string;
   posted?: string;
+  externalLink?: string;
   // fields returned by matching endpoint
   score?: number;
 }

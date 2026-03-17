@@ -44,6 +44,7 @@ public class UserService {
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .phone(phone)
+                .role(User.Role.USER)
                 .isActive(true)
                 .build();
 
@@ -185,9 +186,14 @@ public class UserService {
      * Get user skills.
      */
     public java.util.Set<Skill> getUserSkills(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return user.getSkills();
+        try {
+            User user = userRepository.findByIdWithSkills(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            return user.getSkills() != null ? user.getSkills() : java.util.Set.of();
+        } catch (Exception e) {
+            logger.error("Error fetching user skills for {}", userId, e);
+            return java.util.Set.of();
+        }
     }
 
     /**

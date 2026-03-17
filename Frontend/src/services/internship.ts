@@ -8,8 +8,13 @@ import { Internship, MatchResult } from '../app/types';
 /** Safely normalize skills to a string array regardless of backend shape */
 function normalizeSkills(skills: unknown): string[] {
   if (!skills) return [];
-  if (Array.isArray(skills)) return (skills as any[]).map(s => String(s).trim()).filter(Boolean);
-  if (typeof skills === 'string') return skills.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  if (Array.isArray(skills)) return (skills as any[])
+    .map(s => (typeof s === 'string' ? s : s?.name || String(s)).trim())
+    .filter(Boolean);
+  if (typeof skills === 'string') {
+    const trimmed = skills.trim();
+    return trimmed ? [trimmed] : [];
+  }
   return [];
 }
 

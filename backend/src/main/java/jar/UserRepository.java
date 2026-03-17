@@ -32,4 +32,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Count users by role.
      */
     long countByRole(User.Role role);
+
+    /**
+     * Fetch a user with skills to avoid lazy loading issues.
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u LEFT JOIN FETCH u.skills WHERE u.id = :id")
+    java.util.Optional<User> findByIdWithSkills(@org.springframework.data.repository.query.Param("id") Long id);
 }

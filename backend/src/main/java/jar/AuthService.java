@@ -59,6 +59,7 @@ public class AuthService {
             newUser.setName(name);
             newUser.setEmail(email);
             newUser.setPassword(passwordEncoder.encode(password));
+            newUser.setRole(User.Role.USER);
 
             // Save user to database
             User savedUser = userRepository.save(newUser);

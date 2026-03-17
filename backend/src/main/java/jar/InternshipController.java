@@ -34,10 +34,13 @@ public class InternshipController {
     public ResponseEntity<?> getAllInternships() {
         try {
             List<Internship> internships = internshipService.getAllInternships();
+            List<jar.dto.InternshipDTO> dtoList = internships.stream()
+                    .map(i -> internshipService.convertToDTO(i, 0))
+                    .collect(java.util.stream.Collectors.toList());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("count", internships.size());
-            response.put("data", internships);
+            response.put("count", dtoList.size());
+            response.put("data", dtoList);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error fetching internships", e);
@@ -82,11 +85,14 @@ public class InternshipController {
     public ResponseEntity<?> searchInternships(@RequestParam String title) {
         try {
             List<Internship> internships = internshipService.searchInternships(title);
+            List<jar.dto.InternshipDTO> dtoList = internships.stream()
+                    .map(i -> internshipService.convertToDTO(i, 0))
+                    .collect(java.util.stream.Collectors.toList());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("query", title);
-            response.put("count", internships.size());
-            response.put("data", internships);
+            response.put("count", dtoList.size());
+            response.put("data", dtoList);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error searching internships", e);
@@ -104,11 +110,14 @@ public class InternshipController {
     public ResponseEntity<?> getInternshipsByCompany(@PathVariable String company) {
         try {
             List<Internship> internships = internshipService.getInternshipsByCompany(company);
+            List<jar.dto.InternshipDTO> dtoList = internships.stream()
+                    .map(i -> internshipService.convertToDTO(i, 0))
+                    .collect(java.util.stream.Collectors.toList());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("company", company);
-            response.put("count", internships.size());
-            response.put("data", internships);
+            response.put("count", dtoList.size());
+            response.put("data", dtoList);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error fetching internships by company", e);
@@ -125,11 +134,14 @@ public class InternshipController {
     public ResponseEntity<?> getInternshipsBySource(@PathVariable String source) {
         try {
             List<Internship> internships = internshipService.getInternshipsBySource(source);
+            List<jar.dto.InternshipDTO> dtoList = internships.stream()
+                    .map(i -> internshipService.convertToDTO(i, 0))
+                    .collect(java.util.stream.Collectors.toList());
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("source", source);
-            response.put("count", internships.size());
-            response.put("data", internships);
+            response.put("count", dtoList.size());
+            response.put("data", dtoList);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error fetching internships by source", e);
@@ -149,7 +161,7 @@ public class InternshipController {
                     .map(internship -> {
                         Map<String, Object> response = new HashMap<>();
                         response.put("success", true);
-                        response.put("data", internship);
+                        response.put("data", internshipService.convertToDTO(internship, 0));
                         return ResponseEntity.ok(response);
                     })
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)

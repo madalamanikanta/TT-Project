@@ -37,10 +37,15 @@ export default function ManageInternships() {
       .includes(searchQuery.toLowerCase())
   );
 
-  const handleDelete = (id: string | number) => {
+  const handleDelete = async (id: string | number) => {
     if (confirm('Are you sure you want to delete this internship?')) {
-      setInternships(internships.filter(i => String(i.id) !== String(id)));
-      // TODO: call backend delete API when available
+      try {
+        await api.delete(`/admin/internships/${id}`);
+        setInternships(internships.filter(i => String(i.id) !== String(id)));
+      } catch (err: any) {
+        console.error("Failed to delete internship", err);
+        alert(err?.response?.data?.message || "Failed to delete internship");
+      }
     }
   };
 
@@ -248,16 +253,23 @@ export default function ManageInternships() {
                     <TableCell>{internship.location || 'Remote'}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {(internship.skills || []).slice(0, 2).map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {typeof skill === 'string' ? skill : (skill as any).name}
-                          </Badge>
-                        ))}
-                        {(internship.skills || []).length > 2 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{(internship.skills || []).length - 2}
-                          </Badge>
-                        )}
+                        {(() => {
+                           const skillsArr = Array.isArray(internship.skills) ? internship.skills : [];
+                           return (
+                             <>
+                             {skillsArr.slice(0, 2).map((skill, index) => (
+                               <Badge key={index} variant="secondary" className="text-xs">
+                                 {typeof skill === 'string' ? skill.trim() : (skill as any).name}
+                               </Badge>
+                             ))}
+                             {skillsArr.length > 2 && (
+                               <Badge variant="secondary" className="text-xs">
+                                 +{skillsArr.length - 2}
+                               </Badge>
+                             )}
+                             </>
+                           );
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell>{internship.stipend || 'Unpaid'}</TableCell>
