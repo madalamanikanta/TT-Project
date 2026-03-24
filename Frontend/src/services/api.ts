@@ -10,6 +10,7 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable cookie send/receive for cross-origin auth flows
 });
 
 // Request interceptor to add JWT token

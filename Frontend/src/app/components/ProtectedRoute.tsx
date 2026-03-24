@@ -9,6 +9,19 @@ interface ProtectedRouteProps {
   requiredRole?: 'admin';
 }
 
+function isTokenValid(token: string | null): boolean {
+  if (!token) return false;
+  try {
+    const [, payload] = token.split('.');
+    if (!payload) return false;
+    const decoded = JSON.parse(atob(payload));
+    if (!decoded?.exp) return false;
+    return Date.now() < decoded.exp * 1000;
+  } catch {
+    return false;
+  }
+}
+
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const token = localStorage.getItem('token');
   const userJson = localStorage.getItem('user');
@@ -17,7 +30,10 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   const redirectPath = requiredRole === 'admin' ? '/admin/login' : '/login';
 
-  if (!token) {
+  if (!isTokenValid(token)) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
     return <Navigate to={redirectPath} replace state={{ from: location }} />;
   }
 

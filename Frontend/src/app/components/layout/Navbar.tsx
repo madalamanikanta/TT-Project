@@ -40,11 +40,11 @@ export function Navbar() {
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-primary transition-colors">
+              Home
+            </Link>
             <Link to="/internships" className="text-gray-700 hover:text-primary transition-colors">
               Internships
-            </Link>
-            <Link to="/" className="text-gray-700 hover:text-primary transition-colors">
-              Companies
             </Link>
           </div>
 

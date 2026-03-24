@@ -111,12 +111,11 @@ public class DashboardController {
     }
 
     private Long extractUserId(HttpServletRequest request) {
-        String auth = request.getHeader("Authorization");
-        if (auth != null && auth.startsWith("Bearer ")) {
-            String token = auth.substring(7);
-            return jwtUtil.extractUserId(token);
+        String token = jwtUtil.resolveToken(request);
+        if (token == null || token.isBlank()) {
+            throw new RuntimeException("Missing token in Authorization header or cookie");
         }
-        throw new RuntimeException("Missing Authorization header");
+        return jwtUtil.extractUserId(token);
     }
 
     private Map<String, Object> errorMap(String msg) {

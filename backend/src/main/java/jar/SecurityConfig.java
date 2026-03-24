@@ -66,8 +66,10 @@ public class SecurityConfig {
                 "http://localhost:5174",
                 "http://localhost:3000"
         ));
+        apiCors.setAllowedOriginPatterns(Arrays.asList("http://localhost:*"));
         apiCors.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        apiCors.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        apiCors.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        apiCors.setExposedHeaders(Arrays.asList("Authorization", "Set-Cookie"));
         apiCors.setAllowCredentials(true);
         source.registerCorsConfiguration("/**", apiCors);
 

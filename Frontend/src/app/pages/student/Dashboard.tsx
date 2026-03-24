@@ -45,7 +45,6 @@ export default function StudentDashboard() {
 
         const { skills, matches } = await fetchDashboardData();
         setUserSkills(skills);
-        setInternships(matches.slice(0, 3).map(m => m.internship));
       } catch (err: any) {
         console.error('Dashboard error:', err);
         if (err.response?.data?.error) {
@@ -112,7 +111,6 @@ export default function StudentDashboard() {
               title="Total Internships"
               value={internships.length.toString()}
               icon={Briefcase}
-              trend="+12%"
             />
             <StatsCard
               title="Matched Internships"

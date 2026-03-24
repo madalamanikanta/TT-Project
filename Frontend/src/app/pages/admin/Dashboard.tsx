@@ -48,28 +48,24 @@ export default function AdminDashboard() {
               title="Total Users"
               value={dashboard?.totalUsers?.toString() ?? '...'}
               icon={Users}
-              trend="+18%"
               description="vs last month"
             />
             <StatsCard
               title="Total Internships"
               value="---"
               icon={Briefcase}
-              trend="+12%"
               description="Active listings"
             />
             <StatsCard
               title="Total Students"
               value={dashboard?.totalStudents?.toString() ?? '...'}
               icon={TrendingUp}
-              trend="+25%"
               description="This month"
             />
             <StatsCard
               title="Total Admins"
               value={dashboard?.totalAdmins?.toString() ?? '...'}
               icon={CheckCircle}
-              trend="+5%"
               description="Active admins"
             />
           </div>

@@ -30,12 +30,11 @@ public class SavedInternshipController {
      * Helper to read the user id from the Authorization header JWT.
      */
     private Long getUserIdFromRequest(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            return jwtUtil.extractUserId(token);
+        String token = jwtUtil.resolveToken(request);
+        if (token == null || token.isBlank()) {
+            throw new RuntimeException("Unauthorized: missing token in Authorization header or cookie");
         }
-        throw new RuntimeException("Unauthorized: missing token");
+        return jwtUtil.extractUserId(token);
     }
 
     /**
