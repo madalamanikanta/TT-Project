@@ -50,7 +50,7 @@ export default function StudentDashboard() {
         if (err.response?.data?.error) {
           setError(err.response.data.error);
         } else if (err.message === 'Network Error') {
-          setError('Unable to contact server. Please ensure backend is running at http://localhost:8080');
+          setError('Unable to contact server. Please ensure the backend is running.');
         } else {
           setError('Failed to load dashboard data');
         }

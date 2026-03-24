@@ -61,7 +61,7 @@ export default function LoginPage() {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.message === 'Network Error') {
-        setError('Cannot connect to server. Please make sure the backend is running on http://localhost:8080');
+        setError('Cannot connect to server. Please make sure the backend is running.');
       } else if (err.message) {
         setError(err.message);
       } else {

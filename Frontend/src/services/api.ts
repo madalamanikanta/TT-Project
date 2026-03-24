@@ -1,12 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { apiConfig } from '../config/apiConfig';
 
-// Create axios instance with base configuration
-// baseURL can be overridden by VITE_API_URL environment variable (e.g. VITE_API_URL=http://localhost:8080/api)
-const baseURL =
-  (import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8080/api';
-
+// Create axios instance with centralized base URL configuration
 const api: AxiosInstance = axios.create({
-  baseURL,
+  baseURL: apiConfig.baseURL,
+  timeout: apiConfig.timeout,
   headers: {
     'Content-Type': 'application/json',
   },

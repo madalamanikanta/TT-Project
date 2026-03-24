@@ -33,7 +33,7 @@ export default function MatchedInternships() {
       } catch (err: any) {
         console.error(err);
         if (err.message === 'Network Error') {
-          setError('Unable to reach the server. Please ensure the backend is running on http://localhost:8080');
+          setError('Unable to reach the server. Please ensure the backend is running.');
         } else {
           setError(err.response?.data?.error || err.message || 'Failed to load matches');
         }
