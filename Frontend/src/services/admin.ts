@@ -61,3 +61,7 @@ export const createAdminInternship = async (data: Partial<Internship>): Promise<
   const response = await api.post('/admin/internships', data);
   return normalizeInternship(response.data);
 };
+
+export const deleteAdminInternship = async (id: string | number) => {
+  return api.delete(`/admin/internships/${id}`);
+};

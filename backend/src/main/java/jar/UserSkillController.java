@@ -15,7 +15,7 @@ import java.util.Set;
  * Handles adding, retrieving, and removing skills from users.
  */
 @RestController
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"})
+@CrossOrigin(originPatterns = {"http://localhost:*", "https://*.vercel.app"}, allowCredentials = "true")
 @RequestMapping("/api/users/{userId}/skills")
 public class UserSkillController {
 

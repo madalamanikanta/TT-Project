@@ -1,94 +1,45 @@
 # API Configuration Guide
 
-This document explains how to configure the API base URL for different environments.
+This frontend now uses a single shared Axios client in `src/services/api.ts`.
 
-## Environment Setup
-
-### For Local Development
-
-The `.env.local` file is automatically used for local development:
+## Required Environment Variable
 
 ```env
-# Local development (localhost:8080)
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_BASE_URL=https://your-backend-domain.example.com
 VITE_API_TIMEOUT=30000
 ```
 
-**Note**: Make sure your backend is running on `http://localhost:8080` before starting the frontend.
+- `VITE_API_BASE_URL` must be the backend origin only.
+- Do not include `/api`; the client appends it automatically.
+- In production, use your Render backend HTTPS URL.
 
-### For Production Deployment
+## How Requests Are Built
 
-The `.env` file is used for production builds:
+1. `src/services/api.ts` reads `import.meta.env.VITE_API_BASE_URL`
+2. It normalizes the origin and appends `/api`
+3. Every request goes through the shared Axios instance
+4. Relative paths such as `/auth/login` become `https://your-backend-domain.example.com/api/auth/login`
 
-```env
-# Production (Render deployment)
-VITE_API_BASE_URL=https://smart-internship-skill-matching-portal-2.onrender.com
-VITE_API_TIMEOUT=30000
+## Debug Logging
+
+The app logs:
+
+```ts
+console.log("API BASE URL:", import.meta.env.VITE_API_BASE_URL)
 ```
 
-## How It Works
+It also logs request and error details in the browser console to help diagnose deployment issues.
 
-1. **Base URL Configuration** (`src/config/apiConfig.ts`):
-   - Reads `VITE_API_BASE_URL` environment variable
-   - Automatically appends `/api` suffix to all requests
-   - Falls back to `http://localhost:8080` if not set
+## CORS
 
-2. **API Initialization** (`src/services/api.ts`):
-   - Uses the `apiConfig` for axios base URL and timeout
-   - Automatically adds JWT token from localStorage to all requests
-   - Handles 401 (unauthorized) responses by redirecting to login
+If the frontend is hosted on Vercel, the backend must allow the Vercel origin. The backend in this workspace was updated to allow:
 
-3. **Service Calls** (throughout the app):
-   - All API endpoints use relative paths: `/auth/login`, `/internships`, etc.
-   - The `/api` prefix is automatically added by the config
-
-## Available API Routes
-
-All routes are accessed with the `/api` prefix:
-
-- **Authentication**: `/api/auth/login`, `/api/auth/register`, `/api/auth/profile/{id}`
-- **Internships**: `/api/internships`, `/api/saved-internships`, `/api/internships/{id}`
-- **Dashboard**: `/api/dashboard`
-- **Admin**: `/api/admin/dashboard`, `/api/admin/users`, `/api/admin/internships`
-
-## Adding a New Environment
-
-To add a new deployment environment:
-
-1. Create a `.env.{environment}` file (e.g., `.env.staging`)
-2. Set `VITE_API_BASE_URL` to your backend URL
-3. Update your build/deploy script to use that env file
-
-Example for Staging:
-```env
-# Staging environment
-VITE_API_BASE_URL=https://staging-internship-api.example.com
-VITE_API_TIMEOUT=30000
+```java
+@CrossOrigin(originPatterns = {"http://localhost:*", "https://*.vercel.app"}, allowCredentials = "true")
 ```
 
 ## Troubleshooting
 
-### "Network Error" or "Cannot connect to server"
-
-1. Check if backend is running on the correct URL
-2. Verify `VITE_API_BASE_URL` in `.env.local` matches your backend URL
-3. Check browser console for CORS errors
-4. Ensure backend has CORS headers properly configured
-
-### API calls not authenticating
-
-1. Verify JWT token is being saved in localStorage after login
-2. Check that `Authorization: Bearer <token>` header is being sent
-3. Verify token hasn't expired (24-hour expiration by default)
-4. Check backend logs for authentication errors
-
-### CORS Issues
-
-Ensure the backend's CORS configuration includes your frontend origin:
-```java
-apiCors.setAllowedOrigins(Arrays.asList(
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000"
-));
-```
+- If requests hit the Vercel domain instead of Render, `VITE_API_BASE_URL` is missing or incorrect in Vercel.
+- If requests fail before reaching the controller, check browser console CORS errors.
+- If auth works in Postman but not in the browser, verify the frontend origin is allowed by backend CORS.

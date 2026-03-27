@@ -6,9 +6,7 @@ import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Edit, Trash2, Plus, Search } from 'lucide-react';
 import { Internship } from '../../types';
-import { fetchAdminInternships, createAdminInternship } from '../../../services/admin';
-
-import api from '../../../services/api';
+import { fetchAdminInternships, createAdminInternship, deleteAdminInternship } from '../../../services/admin';
 
 export default function ManageInternships() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,7 +38,7 @@ export default function ManageInternships() {
   const handleDelete = async (id: string | number) => {
     if (confirm('Are you sure you want to delete this internship?')) {
       try {
-        await api.delete(`/admin/internships/${id}`);
+        await deleteAdminInternship(id);
         setInternships(internships.filter(i => String(i.id) !== String(id)));
       } catch (err: any) {
         console.error("Failed to delete internship", err);
@@ -55,8 +53,7 @@ export default function ManageInternships() {
     setError('');
     
     try {
-      const response = await api.post('/admin/internships', formData);
-      const newInternship = response.data;
+      const newInternship = await createAdminInternship(formData);
       
       // Immediately refresh the list with the fresh database entity
       setInternships([newInternship, ...internships]);

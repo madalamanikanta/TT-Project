@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * user id from the Authorization header.
  */
 @RestController
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"})
+@CrossOrigin(originPatterns = {"http://localhost:*", "https://*.vercel.app"}, allowCredentials = "true")
 @RequestMapping("/api")
 public class DashboardController {
 

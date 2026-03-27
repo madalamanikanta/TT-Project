@@ -17,7 +17,7 @@ import java.util.Map;
  * Handles user registration, login, and profile management.
  */
 @RestController
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"})
+@CrossOrigin(originPatterns = {"http://localhost:*", "https://*.vercel.app"}, allowCredentials = "true")
 @RequestMapping("/api/auth")
 public class AuthController {
 
