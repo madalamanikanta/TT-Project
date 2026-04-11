@@ -107,11 +107,6 @@ The system uses a relational schema with the following core tables:
    npm run dev
    ```
 
-## ⚠️ Known Issues & Notes
-- **Enum Consistency**: The system supports `STUDENT`, `ADMIN`, and legacy `USER` roles. An automatic migration script runs on startup to align roles.
-- **Mock Data Fallbacks**: Student-facing pages (Matches, Internships) are designed to fall back to static data if the backend is unreachable to ensure a consistent user experience.
-- **API Keys**: External internship fetching requires a valid RapidAPI key for the JSearch API, which should be configured in `InternshipService.java`.
-
 ## 🔮 Future Improvements
 - **Real-time Notifications**: Notify students when new matches are found.
 - **Enhanced Matching**: AI-driven matching based on internship descriptions.
